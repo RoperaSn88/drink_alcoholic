@@ -4,6 +4,7 @@ namespace DrinkAlcoholic
     {
         Ready,
         Playing,
+        Paused,
         GameOver,
     }
 }

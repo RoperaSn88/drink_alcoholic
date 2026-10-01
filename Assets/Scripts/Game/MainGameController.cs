@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace DrinkAlcoholic
 {
@@ -9,6 +10,7 @@ namespace DrinkAlcoholic
         [SerializeField] DrinkerTarget target;
         [SerializeField] AlcoholGaugeView gaugeView;
         [SerializeField] MainGameHud hud;
+        [SerializeField] GameMenuPanel gameMenuPanel;
         [SerializeField] GameOverPanel gameOverPanel;
 
         [Header("Audio（任意）")]
@@ -23,7 +25,15 @@ namespace DrinkAlcoholic
 
         void Awake()
         {
+            if (!ValidateReferences())
+            {
+                enabled = false;
+                return;
+            }
+
             hud.OnStartClicked += StartParty;
+            gameMenuPanel.OnContinueClicked += ResumeGame;
+            gameMenuPanel.OnExitClicked += SceneLoader.LoadTitle;
             score.OnChanged += hud.SetScore;
             player.OnBottleEmptied += HandleBottleEmptied;
         }
@@ -31,6 +41,7 @@ namespace DrinkAlcoholic
         void Start()
         {
             gameOverPanel.Hide();
+            gameMenuPanel.Hide();
             score.Reset();
             SetState(GameState.Ready);
             AudioManager.Instance.PlayBgm(bgm);
@@ -52,6 +63,19 @@ namespace DrinkAlcoholic
 
         void Update()
         {
+            if (Keyboard.current?.escapeKey.wasPressedThisFrame == true)
+            {
+                if (State == GameState.Playing)
+                {
+                    SetState(GameState.Paused);
+                    gameMenuPanel.Show();
+                }
+                else if (State == GameState.Paused)
+                {
+                    ResumeGame();
+                }
+            }
+
             if (State != GameState.Playing) return;
 
             float dt = Time.deltaTime;
@@ -74,6 +98,32 @@ namespace DrinkAlcoholic
             SetState(GameState.GameOver);
             AudioManager.Instance.PlaySe(gameOverSe);
             gameOverPanel.Show(score.BottleCount);
+        }
+
+        void ResumeGame()
+        {
+            gameMenuPanel.Hide();
+            SetState(GameState.Playing);
+        }
+
+        bool ValidateReferences()
+        {
+            bool valid = true;
+            valid &= Require(config, nameof(config));
+            valid &= Require(player, nameof(player));
+            valid &= Require(target, nameof(target));
+            valid &= Require(gaugeView, nameof(gaugeView));
+            valid &= Require(hud, nameof(hud));
+            valid &= Require(gameMenuPanel, nameof(gameMenuPanel));
+            valid &= Require(gameOverPanel, nameof(gameOverPanel));
+            return valid;
+        }
+
+        bool Require(UnityEngine.Object reference, string fieldName)
+        {
+            if (reference != null) return true;
+            Debug.LogError($"{nameof(MainGameController)} の {fieldName} が設定されていません。", this);
+            return false;
         }
 
         void SetState(GameState state)
