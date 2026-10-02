@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,8 @@ namespace DrinkAlcoholic
         [SerializeField] Slider bgmSlider;
         [SerializeField] Slider seSlider;
         [SerializeField] Button closeButton;
+
+        public event Action OnClosed;
 
         void Awake()
         {
@@ -23,7 +26,11 @@ namespace DrinkAlcoholic
             seSlider.SetValueWithoutNotify(AudioManager.Instance.SeVolume);
         }
 
-        public void Close() => gameObject.SetActive(false);
+        public void Close()
+        {
+            gameObject.SetActive(false);
+            OnClosed?.Invoke();
+        }
 
         void OnBgmChanged(float v) => AudioManager.Instance.SetBgmVolume(v);
         void OnSeChanged(float v) => AudioManager.Instance.SetSeVolume(v);
